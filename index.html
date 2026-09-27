@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ボイスチェンジャー サンプラー</title>
+<style>
+  :root{
+    --bg:#0d0f14;
+    --panel:#1a1e27;
+    --panel2:#20242f;
+    --accent:#3ea6ff;
+    --danger:#ff4757;
+    --text:#e8eaf0;
+    --sub:#8890a0;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+  }
+  .app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    padding:20px 16px 32px;
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+  }
+  h1{
+    font-size:17px;
+    text-align:center;
+    color:var(--sub);
+    letter-spacing:2px;
+    margin:6px 0 0;
+    font-weight:600;
+  }
+
+  /* ---- 録音ボタン ---- */
+  .record-section{
+    background:var(--panel);
+    border-radius:20px;
+    padding:22px;
+    text-align:center;
+  }
+  #recordBtn{
+    width:100%;
+    padding:22px 0;
+    font-size:20px;
+    font-weight:700;
+    border:none;
+    border-radius:16px;
+    background:linear-gradient(180deg,#2a2f3c,#1c202a);
+    color:var(--text);
+    box-shadow:0 4px 0 #10131a, 0 6px 14px rgba(0,0,0,.4);
+    transition:transform .08s;
+  }
+  #recordBtn:active{transform:translateY(3px);box-shadow:0 1px 0 #10131a;}
+  #recordBtn.recording{
+    background:linear-gradient(180deg,#ff5b6a,#c1202f);
+    box-shadow:0 4px 0 #7a121d, 0 6px 14px rgba(255,60,70,.4);
+    animation:blink 1s infinite;
+  }
+  @keyframes blink{
+    0%,100%{opacity:1;}
+    50%{opacity:.55;}
+  }
+  #status{
+    margin-top:12px;
+    font-size:13px;
+    color:var(--sub);
+    min-height:16px;
+  }
+
+  /* ---- エフェクト選択 ---- */
+  .effect-section{
+    background:var(--panel);
+    border-radius:20px;
+    padding:18px;
+  }
+  .section-label{
+    font-size:12px;
+    color:var(--sub);
+    letter-spacing:1px;
+    margin-bottom:12px;
+    padding-left:4px;
+  }
+  .effect-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .effect-option{
+    position:relative;
+  }
+  .effect-option input{
+    position:absolute;
+    opacity:0;
+    width:100%;
+    height:100%;
+    margin:0;
+    cursor:pointer;
+  }
+  .effect-option label{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    padding:16px 6px;
+    border-radius:14px;
+    background:var(--panel2);
+    border:2px solid transparent;
+    font-size:14px;
+    font-weight:600;
+    text-align:center;
+    color:var(--sub);
+    transition:.15s;
+  }
+  .effect-option label .emoji{font-size:22px;}
+  .effect-option input:checked + label{
+    border-color:var(--accent);
+    color:var(--text);
+    background:#1c2c40;
+    box-shadow:0 0 0 4px rgba(62,166,255,.12);
+  }
+
+  /* ---- 再生 ---- */
+  .play-section{
+    margin-top:auto;
+    background:var(--panel);
+    border-radius:20px;
+    padding:22px;
+    text-align:center;
+  }
+  #playBtn{
+    width:100%;
+    padding:30px 0;
+    font-size:24px;
+    font-weight:800;
+    letter-spacing:2px;
+    border:none;
+    border-radius:18px;
+    background:linear-gradient(180deg,#3ea6ff,#1f6fc0);
+    color:#fff;
+    box-shadow:0 5px 0 #144b83,0 8px 18px rgba(62,166,255,.3);
+    transition:transform .08s, opacity .2s;
+  }
+  #playBtn:active{transform:translateY(4px);box-shadow:0 1px 0 #144b83;}
+  #playBtn:disabled{
+    opacity:.35;
+    background:#2a2f3c;
+    box-shadow:none;
+  }
+  .hint{
+    margin-top:10px;
+    font-size:12px;
+    color:var(--sub);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>VOICE SAMPLER</h1>
+
+  <div class="record-section">
+    <button id="recordBtn">● 録音開始</button>
+    <div id="status">マイク待機中</div>
+  </div>
+
+  <div class="effect-section">
+    <div class="section-label">VOICE EFFECT</div>
+    <div class="effect-grid">
+      <div class="effect-option">
+        <input type="radio" name="effect" id="eff-normal" value="normal" checked>
+        <label for="eff-normal"><span class="emoji">🎙️</span>通常</label>
+      </div>
+      <div class="effect-option">
+        <input type="radio" name="effect" id="eff-low" value="low_male">
+        <label for="eff-low"><span class="emoji">😤</span>渋い男声</label>
+      </div>
+      <div class="effect-option">
+        <input type="radio" name="effect" id="eff-mild" value="mild_male">
+        <label for="eff-mild"><span class="emoji">🙂</span>爽やか男声</label>
+      </div>
+      <div class="effect-option">
+        <input type="radio" name="effect" id="eff-female" value="female">
+        <label for="eff-female"><span class="emoji">👩</span>女声</label>
+      </div>
+      <div class="effect-option" style="grid-column: span 2;">
+        <input type="radio" name="effect" id="eff-helium" value="helium">
+        <label for="eff-helium"><span class="emoji">🎈</span>ヘリウムガス</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="play-section">
+    <button id="playBtn" disabled>▶ 再生</button>
+    <div class="hint">録音後、選んだ声で再生されます</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let audioContext = null;
+  let mediaRecorder = null;
+  let mediaStream = null;
+  let chunks = [];
+  let audioBuffer = null;
+  let isRecording = false;
+  let isStarting = false;      // 【修正】マイク許可待ち中の二重タップ防止
+  let currentSource = null;    // 【修正】再生中の音を管理（連打で音が重ならないように）
+
+  const recordBtn = document.getElementById('recordBtn');
+  const playBtn = document.getElementById('playBtn');
+  const statusEl = document.getElementById('status');
+
+  const EFFECTS = {
+    normal: {
+      rate: 1.0,
+      filters: []
+    },
+    low_male: {
+      rate: 0.75,
+      filters: [
+        { type: 'lowpass',  frequency: 2600, Q: 0.7 },
+        { type: 'peaking',  frequency: 150,  Q: 1.0, gain: 10 }
+      ]
+    },
+    mild_male: {
+      rate: 0.85,
+      filters: [
+        { type: 'lowpass',  frequency: 3800, Q: 0.7 },
+        { type: 'peaking',  frequency: 190,  Q: 1.0, gain: 5 }
+      ]
+    },
+    helium: {
+      rate: 1.6,
+      filters: [
+        { type: 'highpass', frequency: 300,  Q: 0.7 },
+        { type: 'peaking',  frequency: 3000, Q: 1.0, gain: 4 }
+      ]
+    },
+    female: {
+      rate: 1.3,
+      filters: [
+        { type: 'highshelf', frequency: 2500, gain: 4 },
+        { type: 'peaking',   frequency: 1200, Q: 1.0, gain: 4 }
+      ]
+    }
+  };
+
+  function ensureAudioContext(){
+    if(!audioContext){
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      audioContext = new Ctx();
+    }
+    // 【修正】iOSは録音後に 'interrupted' 状態になることがあるため、
+    // 'suspended' だけでなく running 以外なら resume する
+    if(audioContext.state !== 'running'){
+      audioContext.resume().catch(function(){});
+    }
+    return audioContext;
+  }
+
+  function getSelectedEffectKey(){
+    const el = document.querySelector('input[name="effect"]:checked');
+    return el ? el.value : 'normal';
+  }
+
+  function setStatus(text){
+    statusEl.textContent = text;
+  }
+
+  // 【修正】対応している録音形式を選ぶ。
+  // Chromeは audio/mp4 にも true を返すがデコード失敗しやすいので webm を優先。
+  // Safari は webm 非対応なので自動的に mp4 になる。
+  function pickMimeType(){
+    if(!window.MediaRecorder || !MediaRecorder.isTypeSupported) return '';
+    const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+    for(const t of types){
+      if(MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return '';
+  }
+
+  // ---- 録音処理 ----
+  async function startRecording(){
+    // 【修正】HTTPSでないとマイクが使えないことを明示
+    if(!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      setStatus('マイクを使うには https:// で開いてください');
+      return;
+    }
+    if(!window.MediaRecorder){
+      setStatus('このブラウザは録音に対応していません');
+      return;
+    }
+
+    isStarting = true;
+    setStatus('マイクの許可を待っています...');
+    try{
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    }catch(err){
+      isStarting = false;
+      setStatus('マイクへのアクセスが許可されませんでした');
+      return;
+    }
+    isStarting = false;
+
+    chunks = [];
+    const mimeType = pickMimeType();
+
+    try{
+      mediaRecorder = mimeType ? new MediaRecorder(mediaStream, { mimeType }) : new MediaRecorder(mediaStream);
+    }catch(e){
+      mediaRecorder = new MediaRecorder(mediaStream);
+    }
+
+    mediaRecorder.ondataavailable = function(e){
+      if(e.data && e.data.size > 0){
+        chunks.push(e.data);
+      }
+    };
+
+    mediaRecorder.onstop = async function(){
+      if(mediaStream){
+        mediaStream.getTracks().forEach(t => t.stop());
+        mediaStream = null;
+      }
+      if(chunks.length === 0){
+        setStatus('録音データが空でした。もう一度お試しください');
+        return;
+      }
+      setStatus('音声を処理中...');
+      try{
+        const blob = new Blob(chunks, { type: mediaRecorder.mimeType || mimeType || 'audio/mp4' });
+        const arrayBuffer = await blob.arrayBuffer();
+        const ctx = ensureAudioContext();
+        ctx.decodeAudioData(arrayBuffer, function(decoded){
+          audioBuffer = decoded;
+          playBtn.disabled = false;
+          setStatus('録音完了。再生ボタンを押してください');
+        }, function(err){
+          console.error(err);
+          setStatus('音声のデコードに失敗しました');
+        });
+      }catch(err){
+        console.error(err);
+        setStatus('録音データの処理に失敗しました');
+      }
+    };
+
+    stopPlayback();
+    mediaRecorder.start();
+    isRecording = true;
+    recordBtn.textContent = '■ 録音停止';
+    recordBtn.classList.add('recording');
+    playBtn.disabled = true;
+    setStatus('録音中...');
+  }
+
+  function stopRecording(){
+    if(mediaRecorder && mediaRecorder.state !== 'inactive'){
+      mediaRecorder.stop();
+    }
+    isRecording = false;
+    recordBtn.textContent = '● 録音開始';
+    recordBtn.classList.remove('recording');
+  }
+
+  recordBtn.addEventListener('click', function(){
+    ensureAudioContext();
+    if(isStarting) return; // 【修正】許可待ち中のタップは無視
+    if(!isRecording){
+      startRecording();
+    }else{
+      stopRecording();
+    }
+  });
+
+  // ---- 再生処理 ----
+  function stopPlayback(){
+    if(currentSource){
+      try{ currentSource.stop(); }catch(e){}
+      currentSource = null;
+    }
+  }
+
+  function playWithEffect(){
+    if(!audioBuffer) return;
+    const ctx = ensureAudioContext();
+
+    stopPlayback(); // 【修正】前の再生を止めてから再生
+
+    const effect = EFFECTS[getSelectedEffectKey()] || EFFECTS.normal;
+
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.playbackRate.value = effect.rate;
+
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 1.0;
+
+    let lastNode = source;
+    effect.filters.forEach(function(f){
+      const filter = ctx.createBiquadFilter();
+      filter.type = f.type;
+      filter.frequency.value = f.frequency;
+      if(f.Q !== undefined) filter.Q.value = f.Q;
+      if(f.gain !== undefined) filter.gain.value = f.gain;
+      lastNode.connect(filter);
+      lastNode = filter;
+    });
+
+    lastNode.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    source.onended = function(){
+      if(currentSource === source) currentSource = null;
+    };
+    currentSource = source;
+    source.start(0);
+  }
+
+  playBtn.addEventListener('click', function(){
+    ensureAudioContext();
+    playWithEffect();
+  });
+
+})();
+</script>
+</body>
+</html>
