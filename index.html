@@ -38,6 +38,13 @@
     flex-direction:column;
     gap:18px;
   }
+  #backBtn{
+    align-self:flex-start;
+    font:inherit;font-size:15px;font-weight:700;
+    padding:10px 16px;border:none;border-radius:999px;
+    background:#ff924c;color:#fff;box-shadow:0 3px 0 #d8692a;
+  }
+  #backBtn[hidden]{display:none;}
   h1{
     font-size:17px;
     text-align:center;
@@ -255,6 +262,7 @@
 </head>
 <body>
 <div class="app">
+  <button id="backBtn" type="button" hidden>← せんむすびにもどる</button>
   <h1>VOICE SAMPLER</h1>
 
   <!-- 1. ことばを選ぶ -->
@@ -309,7 +317,7 @@
         <button id="wavBtn" disabled>⬇ ファイル</button>
       </div>
     </div>
-    <div class="hint">録音はこの端末の中だけに保存され、どこにも送信されません。保存した声は、同じ端末・同じブラウザで開いた「せんむすび」で使われます。</div>
+    <div class="hint">録音はこの端末の中だけに保存され、どこにも送信されません。iPhoneでホーム画面から使う場合は、せんむすびの 🎤 ボタンからこの画面を開いて保存してください（ホーム画面のアプリどうしは保存場所が別々のため）。</div>
   </div>
 </div>
 
@@ -779,7 +787,16 @@
   wavBtn.addEventListener('click', ()=>{
     if(!raw) return;
     const it=findItem(targetSel.value);
+    const name=(it ? it.n.replace(/[\\/:*?"<>|！]/g,'') : 'voice')+'.wav';
     const blob=new Blob([toWav(getProcessed(), rawSr)],{type:'audio/wav'});
+    // iPhoneは共有シート（「ファイルに保存」やLINEで送る）を使う
+    try{
+      const file=new File([blob], name, {type:'audio/wav'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file]}).catch(function(){});
+        return;
+      }
+    }catch(e){}
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
     a.download=(it ? it.n.replace(/[\\/:*?"<>|！]/g,'') : 'voice')+'.wav';
@@ -789,6 +806,12 @@
 
   // せんむすびで写真を追加して戻ってきたときにも一覧を更新
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshSaved(); });
+  // せんむすびから開いたときは「もどる」ボタンを出す
+  const backBtn=$('backBtn');
+  if(/[?&]from=senmusubi/.test(location.search)){
+    backBtn.hidden=false;
+    backBtn.addEventListener('click', ()=>{ stopPlayback(); location.href='../senmusubi/'; });
+  }
   refreshSaved();
 })();
 </script>
